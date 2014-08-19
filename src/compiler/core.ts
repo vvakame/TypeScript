@@ -17,6 +17,36 @@ module ts {
         return result;
     }
 
+    function find<T>(array: T[], predicate: (element: T) => boolean, startToEnd: boolean): T {
+        if (array) {
+            var len = array.length;
+            if (startToEnd) {
+                for (var i = 0; i < len; ++i) {
+                    if (predicate(array[i])) {
+                        return array[i];
+                    }
+                }
+            }
+            else {
+                for (var i = len - 1; i >= 0; --i) {
+                    if (predicate(array[i])) {
+                        return array[i];
+                    }
+                }
+            }
+        }
+        return undefined;
+    }
+
+    export function findFirst<T>(array: T[], predicate: (element: T) => boolean): T {
+        return find(array, predicate, /*startToEnd*/ true)
+    }
+
+
+    export function findLast<T>(array: T[], predicate: (element: T) => boolean): T {
+        return find(array, predicate, /*startToEnd*/ false)
+    }
+
     export function contains<T>(array: T[], value: T): boolean {
         if (array) {
             var len = array.length;

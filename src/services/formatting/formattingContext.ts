@@ -15,7 +15,7 @@
 
 /// <reference path="formatting.ts"/>
 
-module TypeScript.Services.Formatting {
+module ts.formatting {
     export class FormattingContext {
         public currentTokenSpan: TokenSpan = null;
         public nextTokenSpan: TokenSpan = null;
@@ -106,11 +106,13 @@ module TypeScript.Services.Formatting {
         // Now we know we have a block (or a fake block represented by some other kind of node with an open and close brace as children).
         // IMPORTANT!!! This relies on the invariant that IsBlockContext must return true ONLY for nodes with open and close braces as immediate children
         public BlockIsOnOneLine(node: IndentationNodeContext): boolean {
-            var block = <BlockSyntax>node.node();
+            var block = <Block>node.node();
 
             // Now check if they are on the same line
-            return this.snapshot.getLineNumberFromPosition(end(block.openBraceToken)) === 
-                   this.snapshot.getLineNumberFromPosition(start(block.closeBraceToken));
+            var children = block.getChildren();
+            var openBraceToken = findFirst(children, e => e.kind === SyntaxKind.OpenBraceToken);
+            var closeBraceToken = findLast(children, e => e.kind === SyntaxKind.CloseBraceToken);
+            return openBraceToken && closeBraceToken && this.snapshot.getLineNumberFromPosition(openBraceToken.getEnd()) === this.snapshot.getLineNumberFromPosition(closeBraceToken.getStart());
         }
     }
 }

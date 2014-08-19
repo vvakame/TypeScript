@@ -39,6 +39,7 @@ module ts {
         getFullWidth(): number;
         getLeadingTriviaWidth(): number;
         getFullText(): string;
+        getText(): string;
         getFirstToken(): Node;
         getLastToken(): Node;
     }
@@ -128,6 +129,10 @@ module ts {
 
         public getFullText(): string {
             return this.getSourceFile().text.substring(this.pos, this.end);
+        }
+
+        public getText(): string {
+            return this.getSourceFile().text.substring(this.getStart(), this.getEnd());
         }
 
         private addSyntheticNodes(nodes: Node[], pos: number, end: number): number {
@@ -425,6 +430,204 @@ module ts {
             newSourceFile.syntaxTree = syntaxTree;
             return newSourceFile;
         }
+    }
+
+    export interface Trivia extends TextRange {
+        kind: SyntaxKind;
+        fullWidth: number;
+        isNewLine: boolean;
+        isComment: boolean;
+        isSkippedToken: boolean;
+    }
+
+    export function getLeadingTrivia(node: Node): Trivia[] {
+        var text = getSourceFileOfNode(node).text;
+        return getTrivia(text, node.getFullStart(), node.getStart(), /*trailing*/ false);
+    }
+
+    export function getTrailingTrivia(node: Node): Trivia[] {
+        var text = getSourceFileOfNode(node).text;
+        return getTrivia(text, node.getEnd(), /*end*/ undefined, /*trailing*/ true);
+    }
+
+    export function getTriviaText(trivia: Trivia, sourceFile: SourceFile): string {
+        return sourceFile.text.substring(trivia.pos, trivia.end);
+    }
+
+    function getTrivia(text: string, start: number, end: number, trailing: boolean): Trivia[] {
+        var result: Trivia[];
+
+        var pos = start;
+        end = end || text.length;
+        while (pos < end) {
+            var startPos = pos;
+            var ch = text.charCodeAt(pos);
+            switch (ch) {
+                case CharacterCodes.carriageReturn:
+                    if (text.charCodeAt(pos + 1) === CharacterCodes.lineFeed) {
+                        pos++;
+                    }
+                case CharacterCodes.lineFeed:
+                    pos++;
+                    var trivia: Trivia = {
+                        kind: SyntaxKind.NewLineTrivia,
+                        isSkippedToken: false,
+                        isComment: false,
+                        isNewLine: true,
+                        fullWidth: pos - startPos,
+                        pos: startPos,
+                        end: pos
+                    }
+                    result = result || [];
+                    result.push(trivia);
+                    if (trailing) {
+                        return result;
+                    }
+                    break;
+                case CharacterCodes.slash:
+                    var nextChar = text.charCodeAt(pos + 1);
+                    if (nextChar === CharacterCodes.slash) {
+                        pos += 2;
+                        while (pos < end && !isLineBreak(text.charCodeAt(pos))) {
+                            pos++;
+                        }
+                        var trivia: Trivia = {
+                            kind: SyntaxKind.SingleLineCommentTrivia,
+                            isSkippedToken: false,
+                            isComment: true,
+                            isNewLine: false,
+                            fullWidth: pos - startPos,
+                            pos: startPos,
+                            end: pos
+                        };
+                    }
+                    else if (nextChar === CharacterCodes.asterisk) {
+                        pos += 2;
+                        while (pos < end) {
+                            if (text.charCodeAt(pos) === CharacterCodes.asterisk && text.charCodeAt(pos + 1) === CharacterCodes.slash) {
+                                pos += 2;
+                                break;
+                            }
+                            pos++;
+                        }
+                        var trivia: Trivia = {
+                            kind: SyntaxKind.MultiLineCommentTrivia,
+                            isSkippedToken: false,
+                            isComment: true,
+                            isNewLine: false,
+                            fullWidth: pos - startPos,
+                            pos: startPos,
+                            end: pos
+                        };
+
+                    }
+                    else {
+                        Debug.fail("comment expected")
+                    }
+
+                    result = result || [];
+                    result.push(trivia);
+                    // comment
+                    break;
+                case CharacterCodes.tab:
+                case CharacterCodes.verticalTab:
+                case CharacterCodes.formFeed:
+                case CharacterCodes.space:
+                    while (pos < end && isWhiteSpace(text.charCodeAt(pos))) {
+                        pos++;
+                    }
+                    var trivia: Trivia = {
+                        kind: SyntaxKind.WhitespaceTrivia,
+                        isSkippedToken: false,
+                        isComment: false,
+                        isNewLine: false,
+                        fullWidth: pos - startPos,
+                        pos: startPos,
+                        end: pos
+                    }
+                    result = result || [];
+                    result.push(trivia);
+                    break;
+                default:
+                    Debug.fail("trivia should contain only comments\whitespaces\newlines");
+                    break;
+            }
+        }
+        return result;
+    }
+
+    export function getTrailingTriviaFullText(node: Node): string {
+        throw "NYI";
+    }
+
+    export function findToken(node: Node, pos: number): Node {
+        if (pos > node.end) {
+            // TODO: return EOF?
+            return undefined;
+        }
+        function walk(n: Node): Node {
+            Debug.assert(n.pos <= pos && pos <= n.end);
+            if (n.flags & NodeFlags.Synthetic) {
+                return n;
+            }
+
+            var children = n.getChildren();
+            if (!children.length) {
+                return n;
+            }
+
+            // TODO: consider using binary search
+            return forEach(n.getChildren(), c => {
+                if (pos >= c.pos && pos <= c.end) {
+                    return walk(c);
+                }
+                return undefined;
+            });
+        }
+        return walk(node);
+    }
+
+    export function firstTokenInLineContainingPosition(sourceFile: SourceFile, pos: number): Node {
+        throw "NYI";
+    }
+
+    export function getPreviousToken(node: Node): Node {
+        throw "NYI";
+    }
+
+    export function splitMultiLineCommentTriviaIntoMultipleLines(trivia: Trivia): string[]{
+        throw "NYI";
+    }
+
+    export function getLeadingTriviaWidth(token: Node): number {
+        return token.getLeadingTriviaWidth();
+    }
+
+    export function getTrailingTriviaWidth(token: Node): number {
+        var trivia = getTrailingTrivia(token);
+        var width = 0;
+        forEach(trivia, t => { width += t.fullWidth; });
+        return width;
+    }
+
+    export function isToken(n: Node): boolean {
+        return (n.flags & NodeFlags.Synthetic) !== 0 || n.kind === SyntaxKind.Identifier;
+    }
+
+    export function nodeHasSkippedOrMissingTokens(node: Node): boolean {
+        var children = node.getChildren();
+        for (var i = 0; i < children.length; i++) {
+            var child = children[i];
+            if (isToken(child)) {
+                // If a token is skipped, return true. Or if it is a missing token. The only empty token that is not missing is EOF
+                // COMMENTED OUT
+                if (/*child.hasSkippedToken() || */(child.getWidth() === 0 && child.kind !== SyntaxKind.EndOfFileToken)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     export interface Logger {
@@ -1253,7 +1456,7 @@ module ts {
 
     export function createLanguageService(host: LanguageServiceHost, documentRegistry: DocumentRegistry): LanguageService {
         var syntaxTreeCache: SyntaxTreeCache = new SyntaxTreeCache(host);
-        var formattingRulesProvider: TypeScript.Services.Formatting.RulesProvider;
+        var formattingRulesProvider: formatting.RulesProvider;
         var hostCache: HostCache; // A cache of all the information about the files on the host side.
         var program: Program;
         var typeChecker: TypeChecker;
@@ -2163,33 +2366,33 @@ module ts {
         function getIndentationAtPosition(filename: string, position: number, editorOptions: EditorOptions) {
             filename = TypeScript.switchToForwardSlashes(filename);
 
-            var syntaxTree = getSyntaxTree(filename);
+            var sourceFile = getCurrentSourceFile(filename);
 
             var scriptSnapshot = syntaxTreeCache.getCurrentScriptSnapshot(filename);
             var scriptText = TypeScript.SimpleText.fromScriptSnapshot(scriptSnapshot);
-            var textSnapshot = new TypeScript.Services.Formatting.TextSnapshot(scriptText);
+            var textSnapshot = new formatting.TextSnapshot(scriptText);
             var options = new TypeScript.FormattingOptions(!editorOptions.ConvertTabsToSpaces, editorOptions.TabSize, editorOptions.IndentSize, editorOptions.NewLineCharacter)
 
-            return TypeScript.Services.Formatting.SingleTokenIndenter.getIndentationAmount(position, syntaxTree.sourceUnit(), textSnapshot, options);
+            return formatting.SingleTokenIndenter.getIndentationAmount(position, sourceFile, textSnapshot, options);
         }
 
         function getFormattingManager(filename: string, options: FormatCodeOptions) {
             // Ensure rules are initialized and up to date wrt to formatting options
             if (formattingRulesProvider == null) {
-                formattingRulesProvider = new TypeScript.Services.Formatting.RulesProvider(host);
+                formattingRulesProvider = new formatting.RulesProvider(host);
             }
 
             formattingRulesProvider.ensureUpToDate(options);
 
             // Get the Syntax Tree
-            var syntaxTree = getSyntaxTree(filename);
+            var sourceFile = getCurrentSourceFile(filename);
 
             // Convert IScriptSnapshot to ITextSnapshot
             var scriptSnapshot = syntaxTreeCache.getCurrentScriptSnapshot(filename);
             var scriptText = TypeScript.SimpleText.fromScriptSnapshot(scriptSnapshot);
-            var textSnapshot = new TypeScript.Services.Formatting.TextSnapshot(scriptText);
+            var textSnapshot = new formatting.TextSnapshot(scriptText);
 
-            var manager = new TypeScript.Services.Formatting.FormattingManager(syntaxTree, textSnapshot, formattingRulesProvider, options);
+            var manager = new formatting.FormattingManager(sourceFile, textSnapshot, formattingRulesProvider, options);
 
             return manager;
         }

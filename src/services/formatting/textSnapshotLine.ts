@@ -15,7 +15,7 @@
 
 ///<reference path='formatting.ts' />
 
-module TypeScript.Services.Formatting {
+module ts.formatting {
     export interface ITextSnapshotLine {
         snapshot(): ITextSnapshot;
 
@@ -74,7 +74,7 @@ module TypeScript.Services.Formatting {
         }
 
         public getText(): string {
-            return this._snapshot.getText(TextSpan.fromBounds(this._start, this._end));
+            return this._snapshot.getText(TypeScript.TextSpan.fromBounds(this._start, this._end));
         }
     }
 }

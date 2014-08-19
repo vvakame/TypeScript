@@ -15,26 +15,48 @@
 
 ///<reference path='formatting.ts' />
 
-module TypeScript.Services.Formatting {
+module ts.formatting {
+
+    //export function getIndentationForSingleToken(position: number, sourceFile: SourceFile, textSnapshot: ITextSnapshot, formattingOptions: TypeScript.FormattingOptions): number {
+    //    var span = new TypeScript.TextSpan(position, 1);
+    //    var indentationAmount: number;
+
+    //    function indentToken(token: Node, indentationAmount: number, commentIndentationAmount: number, state: WalkState) {
+    //        // Compute an indentation string for this token
+    //        if (token.getFullWidth() === 0 || (this.indentationPosition - this.position() < token.leadingTriviaWidth())) {
+    //            // The position is in the leading trivia, use comment indentation
+    //            this.indentationAmount = commentIndentationAmount;
+    //        }
+    //        else {
+    //            this.indentationAmount = indentationAmount;
+    //        }
+    //    }
+
+    //    indentFile(span, sourceFile, textSnapshot, /*indentFirstToken*/ true, formattingOptions, { indent: indentToken });
+
+    //    return indentationAmount;
+    //}
+
     export class SingleTokenIndenter extends IndentationTrackingWalker {
         private indentationAmount: number = null;
         private indentationPosition: number;
 
-        constructor(indentationPosition: number, sourceUnit: SourceUnitSyntax, snapshot: ITextSnapshot, indentFirstToken: boolean, options: FormattingOptions) {
-            super(new TextSpan(indentationPosition, 1), sourceUnit, snapshot, indentFirstToken, options);
+        constructor(indentationPosition: number, sourceUnit: SourceFile, snapshot: ITextSnapshot, indentFirstToken: boolean, options: TypeScript.FormattingOptions) {
+            super(new TypeScript.TextSpan(indentationPosition, 1), sourceUnit, snapshot, indentFirstToken, options);
 
             this.indentationPosition = indentationPosition;
         }
 
-        public static getIndentationAmount(position: number, sourceUnit: SourceUnitSyntax, snapshot: ITextSnapshot, options: FormattingOptions): number {
+        public static getIndentationAmount(position: number, sourceUnit: SourceFile, snapshot: ITextSnapshot, options: TypeScript.FormattingOptions): number {
             var walker = new SingleTokenIndenter(position, sourceUnit, snapshot, true, options);
-            visitNodeOrToken(walker, sourceUnit);
+            visitNodeOrToken(sourceUnit, walker);
+            //visitNodeOrToken(walker, sourceUnit);
             return walker.indentationAmount;
         }
 
-        public indentToken(token: ISyntaxToken, indentationAmount: number, commentIndentationAmount: number): void {
+        public indentToken(token: Node, indentationAmount: number, commentIndentationAmount: number): void {
             // Compute an indentation string for this token
-            if (token.fullWidth() === 0 || (this.indentationPosition - this.position() < token.leadingTriviaWidth())) {
+            if (token.getFullWidth() === 0 || (this.indentationPosition - this.position() < getLeadingTriviaWidth(token))) {
                 // The position is in the leading trivia, use comment indentation
                 this.indentationAmount = commentIndentationAmount;
             }

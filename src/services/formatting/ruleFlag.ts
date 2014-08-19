@@ -15,7 +15,7 @@
 
 ///<reference path='formatting.ts' />
 
-module TypeScript.Services.Formatting {
+module ts.formatting {
     export enum RuleFlags {
         None,
         CanDeleteNewLines

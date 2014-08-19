@@ -15,14 +15,19 @@
 
 ///<reference path='formatting.ts' />
 
-module TypeScript.Services.Formatting {
-    export class TextEditInfo {
+module ts.formatting {
 
-        constructor(public position: number, public length: number, public replaceWith: string) {
-        }
+    export interface TextEditInfo {
+        position: number;
+        length: number;
+        replaceWith: string;
+    }
 
-        public toString() {
-            return "[ position: " + this.position + ", length: " + this.length + ", replaceWith: '" + this.replaceWith + "' ]";
+    export function createTextEditInfo(position: number, length: number, replaceWith: string): TextEditInfo {
+        return {
+            position: position,
+            length: length,
+            replaceWith: replaceWith
         }
     }
 }

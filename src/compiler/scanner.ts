@@ -286,13 +286,13 @@ module ts {
 
     var hasOwnProperty = Object.prototype.hasOwnProperty;
 
-    function isWhiteSpace(ch: number): boolean {
+    export function isWhiteSpace(ch: number): boolean {
         return ch === CharacterCodes.space || ch === CharacterCodes.tab || ch === CharacterCodes.verticalTab || ch === CharacterCodes.formFeed ||
             ch === CharacterCodes.nonBreakingSpace || ch === CharacterCodes.ogham || ch >= CharacterCodes.enQuad && ch <= CharacterCodes.zeroWidthSpace ||
             ch === CharacterCodes.narrowNoBreakSpace || ch === CharacterCodes.mathematicalSpace || ch === CharacterCodes.ideographicSpace || ch === CharacterCodes.byteOrderMark;
     }
 
-    function isLineBreak(ch: number): boolean {
+    export function isLineBreak(ch: number): boolean {
         return ch === CharacterCodes.lineFeed || ch === CharacterCodes.carriageReturn || ch === CharacterCodes.lineSeparator || ch === CharacterCodes.paragraphSeparator;
     }
 

@@ -15,7 +15,7 @@
 
 ///<reference path='formatting.ts' />
 
-module TypeScript.Services.Formatting {
+module ts.formatting {
     export module Shared {
         export interface ITokenAccess {
             GetTokens(): SyntaxKind[];
@@ -138,15 +138,15 @@ module TypeScript.Services.Formatting {
             static Operators = TokenRange.FromRange(SyntaxKind.SemicolonToken, SyntaxKind.SlashEqualsToken);
             static BinaryOperators = TokenRange.FromRange(SyntaxKind.LessThanToken, SyntaxKind.SlashEqualsToken);
             static BinaryKeywordOperators = TokenRange.FromTokens([SyntaxKind.InKeyword, SyntaxKind.InstanceOfKeyword]);
-            static ReservedKeywords = TokenRange.FromRange(SyntaxKind.FirstFutureReservedStrictKeyword, SyntaxKind.LastFutureReservedStrictKeyword);
+            static ReservedKeywords = TokenRange.FromRange(SyntaxKind.FirstFutureReservedWord, SyntaxKind.LastFutureReservedWord);
             static UnaryPrefixOperators = TokenRange.FromTokens([SyntaxKind.PlusPlusToken, SyntaxKind.MinusMinusToken, SyntaxKind.TildeToken, SyntaxKind.ExclamationToken]);
-            static UnaryPrefixExpressions = TokenRange.FromTokens([SyntaxKind.NumericLiteral, SyntaxKind.IdentifierName, SyntaxKind.OpenParenToken, SyntaxKind.OpenBracketToken, SyntaxKind.OpenBraceToken, SyntaxKind.ThisKeyword, SyntaxKind.NewKeyword]);
-            static UnaryPreincrementExpressions = TokenRange.FromTokens([SyntaxKind.IdentifierName, SyntaxKind.OpenParenToken, SyntaxKind.ThisKeyword, SyntaxKind.NewKeyword]);
-            static UnaryPostincrementExpressions = TokenRange.FromTokens([SyntaxKind.IdentifierName, SyntaxKind.CloseParenToken, SyntaxKind.CloseBracketToken, SyntaxKind.NewKeyword]);
-            static UnaryPredecrementExpressions = TokenRange.FromTokens([SyntaxKind.IdentifierName, SyntaxKind.OpenParenToken, SyntaxKind.ThisKeyword, SyntaxKind.NewKeyword]);
-            static UnaryPostdecrementExpressions = TokenRange.FromTokens([SyntaxKind.IdentifierName, SyntaxKind.CloseParenToken, SyntaxKind.CloseBracketToken, SyntaxKind.NewKeyword]);
+            static UnaryPrefixExpressions = TokenRange.FromTokens([SyntaxKind.NumericLiteral, SyntaxKind.Identifier, SyntaxKind.OpenParenToken, SyntaxKind.OpenBracketToken, SyntaxKind.OpenBraceToken, SyntaxKind.ThisKeyword, SyntaxKind.NewKeyword]);
+            static UnaryPreincrementExpressions = TokenRange.FromTokens([SyntaxKind.Identifier, SyntaxKind.OpenParenToken, SyntaxKind.ThisKeyword, SyntaxKind.NewKeyword]);
+            static UnaryPostincrementExpressions = TokenRange.FromTokens([SyntaxKind.Identifier, SyntaxKind.CloseParenToken, SyntaxKind.CloseBracketToken, SyntaxKind.NewKeyword]);
+            static UnaryPredecrementExpressions = TokenRange.FromTokens([SyntaxKind.Identifier, SyntaxKind.OpenParenToken, SyntaxKind.ThisKeyword, SyntaxKind.NewKeyword]);
+            static UnaryPostdecrementExpressions = TokenRange.FromTokens([SyntaxKind.Identifier, SyntaxKind.CloseParenToken, SyntaxKind.CloseBracketToken, SyntaxKind.NewKeyword]);
             static Comments = TokenRange.FromTokens([SyntaxKind.SingleLineCommentTrivia, SyntaxKind.MultiLineCommentTrivia]);
-            static TypeNames = TokenRange.FromTokens([SyntaxKind.IdentifierName, SyntaxKind.NumberKeyword, SyntaxKind.StringKeyword, SyntaxKind.BooleanKeyword, SyntaxKind.VoidKeyword, SyntaxKind.AnyKeyword]);
+            static TypeNames = TokenRange.FromTokens([SyntaxKind.Identifier, SyntaxKind.NumberKeyword, SyntaxKind.StringKeyword, SyntaxKind.BooleanKeyword, SyntaxKind.VoidKeyword, SyntaxKind.AnyKeyword]);
         }
     }
 }

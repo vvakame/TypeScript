@@ -15,7 +15,7 @@
 
 ///<reference path='formatting.ts' />
 
-module TypeScript.Services.Formatting {
+module ts.formatting {
     export class Rules {
         public getRuleName(rule: Rule) {
             var o: ts.Map<any> = <any>this;
@@ -241,7 +241,7 @@ module TypeScript.Services.Formatting {
             this.SpaceBeforeOpenBraceInFunction = new Rule(RuleDescriptor.create2(this.FunctionOpenBraceLeftTokenRange, SyntaxKind.OpenBraceToken), RuleOperation.create2(new RuleOperationContext(Rules.IsFunctionDeclContext, Rules.IsNotFormatOnEnter, Rules.IsSameLineTokenOrBeforeMultilineBlockContext), RuleAction.Space), RuleFlags.CanDeleteNewLines);
 
             // Place a space before open brace in a TypeScript declaration that has braces as children (class, module, enum, etc)
-            this.TypeScriptOpenBraceLeftTokenRange = Shared.TokenRange.FromTokens([SyntaxKind.IdentifierName, SyntaxKind.MultiLineCommentTrivia]);
+            this.TypeScriptOpenBraceLeftTokenRange = Shared.TokenRange.FromTokens([SyntaxKind.Identifier, SyntaxKind.MultiLineCommentTrivia]);
             this.SpaceBeforeOpenBraceInTypeScriptDeclWithBlock = new Rule(RuleDescriptor.create2(this.TypeScriptOpenBraceLeftTokenRange, SyntaxKind.OpenBraceToken), RuleOperation.create2(new RuleOperationContext(Rules.IsTypeScriptDeclWithBlockContext, Rules.IsNotFormatOnEnter, Rules.IsSameLineTokenOrBeforeMultilineBlockContext), RuleAction.Space), RuleFlags.CanDeleteNewLines);
 
             // Place a space before open brace in a control flow construct
@@ -299,7 +299,7 @@ module TypeScript.Services.Formatting {
 
             //      get x() {}
             //      set x(val) {}
-            this.SpaceAfterGetSetInMember = new Rule(RuleDescriptor.create2(Shared.TokenRange.FromTokens([SyntaxKind.GetKeyword, SyntaxKind.SetKeyword]), SyntaxKind.IdentifierName), RuleOperation.create2(new RuleOperationContext(Rules.IsFunctionDeclContext), RuleAction.Space));
+            this.SpaceAfterGetSetInMember = new Rule(RuleDescriptor.create2(Shared.TokenRange.FromTokens([SyntaxKind.GetKeyword, SyntaxKind.SetKeyword]), SyntaxKind.Identifier), RuleOperation.create2(new RuleOperationContext(Rules.IsFunctionDeclContext), RuleAction.Space));
 
             // Special case for binary operators (that are keywords). For these we have to add a space and shouldn't follow any user options.
             this.SpaceBeforeBinaryKeywordOperator = new Rule(RuleDescriptor.create4(Shared.TokenRange.Any, Shared.TokenRange.BinaryKeywordOperators), RuleOperation.create2(new RuleOperationContext(Rules.IsSameLineTokenContext, Rules.IsBinaryOpContext), RuleAction.Space));
@@ -324,7 +324,7 @@ module TypeScript.Services.Formatting {
             this.SpaceAfterArrow = new Rule(RuleDescriptor.create3(SyntaxKind.EqualsGreaterThanToken, Shared.TokenRange.Any), RuleOperation.create2(new RuleOperationContext(Rules.IsSameLineTokenContext), RuleAction.Space));
 
             // Optional parameters and var args
-            this.NoSpaceAfterEllipsis = new Rule(RuleDescriptor.create1(SyntaxKind.DotDotDotToken, SyntaxKind.IdentifierName), RuleOperation.create2(new RuleOperationContext(Rules.IsSameLineTokenContext), RuleAction.Delete));
+            this.NoSpaceAfterEllipsis = new Rule(RuleDescriptor.create1(SyntaxKind.DotDotDotToken, SyntaxKind.Identifier), RuleOperation.create2(new RuleOperationContext(Rules.IsSameLineTokenContext), RuleAction.Delete));
             this.NoSpaceAfterOptionalParameters = new Rule(RuleDescriptor.create3(SyntaxKind.QuestionToken, Shared.TokenRange.FromTokens([SyntaxKind.CloseParenToken, SyntaxKind.CommaToken])), RuleOperation.create2(new RuleOperationContext(Rules.IsSameLineTokenContext, Rules.IsNotBinaryOpContext), RuleAction.Delete));
 
             // generics
@@ -448,49 +448,53 @@ module TypeScript.Services.Formatting {
 
             switch (context.contextNode.kind()) {
                 // binary expressions
-                case SyntaxKind.AssignmentExpression:
-                case SyntaxKind.AddAssignmentExpression:
-                case SyntaxKind.SubtractAssignmentExpression:
-                case SyntaxKind.MultiplyAssignmentExpression:
-                case SyntaxKind.DivideAssignmentExpression:
-                case SyntaxKind.ModuloAssignmentExpression:
-                case SyntaxKind.AndAssignmentExpression:
-                case SyntaxKind.ExclusiveOrAssignmentExpression:
-                case SyntaxKind.OrAssignmentExpression:
-                case SyntaxKind.LeftShiftAssignmentExpression:
-                case SyntaxKind.SignedRightShiftAssignmentExpression:
-                case SyntaxKind.UnsignedRightShiftAssignmentExpression:
-                case SyntaxKind.ConditionalExpression:
-                case SyntaxKind.LogicalOrExpression:
-                case SyntaxKind.LogicalAndExpression:
-                case SyntaxKind.BitwiseOrExpression:
-                case SyntaxKind.BitwiseExclusiveOrExpression:
-                case SyntaxKind.BitwiseAndExpression:
-                case SyntaxKind.EqualsWithTypeConversionExpression:
-                case SyntaxKind.NotEqualsWithTypeConversionExpression:
-                case SyntaxKind.EqualsExpression:
-                case SyntaxKind.NotEqualsExpression:
-                case SyntaxKind.LessThanExpression:
-                case SyntaxKind.GreaterThanExpression:
-                case SyntaxKind.LessThanOrEqualExpression:
-                case SyntaxKind.GreaterThanOrEqualExpression:
-                case SyntaxKind.InstanceOfExpression:
-                case SyntaxKind.InExpression:
-                case SyntaxKind.LeftShiftExpression:
-                case SyntaxKind.SignedRightShiftExpression:
-                case SyntaxKind.UnsignedRightShiftExpression:
-                case SyntaxKind.MultiplyExpression:
-                case SyntaxKind.DivideExpression:
-                case SyntaxKind.ModuloExpression:
-                case SyntaxKind.AddExpression:
-                case SyntaxKind.SubtractExpression:
+                //case SyntaxKind.AssignmentExpression:
+                //case SyntaxKind.AddAssignmentExpression:
+                //case SyntaxKind.SubtractAssignmentExpression:
+                //case SyntaxKind.MultiplyAssignmentExpression:
+                //case SyntaxKind.DivideAssignmentExpression:
+                //case SyntaxKind.ModuloAssignmentExpression:
+                //case SyntaxKind.AndAssignmentExpression:
+                //case SyntaxKind.ExclusiveOrAssignmentExpression:
+                //case SyntaxKind.OrAssignmentExpression:
+                //case SyntaxKind.LeftShiftAssignmentExpression:
+                //case SyntaxKind.SignedRightShiftAssignmentExpression:
+                //case SyntaxKind.UnsignedRightShiftAssignmentExpression:
+                //case SyntaxKind.ConditionalExpression:
+                //case SyntaxKind.LogicalOrExpression:
+                //case SyntaxKind.LogicalAndExpression:
+                //case SyntaxKind.BitwiseOrExpression:
+                //case SyntaxKind.BitwiseExclusiveOrExpression:
+                //case SyntaxKind.BitwiseAndExpression:
+                //case SyntaxKind.EqualsWithTypeConversionExpression:
+                //case SyntaxKind.NotEqualsWithTypeConversionExpression:
+                //case SyntaxKind.EqualsExpression:
+                //case SyntaxKind.NotEqualsExpression:
+                //case SyntaxKind.LessThanExpression:
+                //case SyntaxKind.GreaterThanExpression:
+                //case SyntaxKind.LessThanOrEqualExpression:
+                //case SyntaxKind.GreaterThanOrEqualExpression:
+                //case SyntaxKind.InstanceOfExpression:
+                //case SyntaxKind.InExpression:
+                //case SyntaxKind.LeftShiftExpression:
+                //case SyntaxKind.SignedRightShiftExpression:
+                //case SyntaxKind.UnsignedRightShiftExpression:
+                //case SyntaxKind.MultiplyExpression:
+                //case SyntaxKind.DivideExpression:
+                //case SyntaxKind.ModuloExpression:
+                //case SyntaxKind.AddExpression:
+                //case SyntaxKind.SubtractExpression:
+                case SyntaxKind.BinaryExpression:
                     return true;
 
                 // equal in import a = module('a');
                 case SyntaxKind.ImportDeclaration:
                 // equal in var a = 0;
-                case SyntaxKind.VariableDeclarator:
-                case SyntaxKind.EqualsValueClause:
+                case SyntaxKind.VariableDeclaration:
+                case SyntaxKind.Parameter:
+                case SyntaxKind.Property:
+                //case SyntaxKind.VariableDeclarator:
+                //case SyntaxKind.EqualsValueClause:
                     return context.currentTokenSpan.kind === SyntaxKind.EqualsToken || context.nextTokenSpan.kind === SyntaxKind.EqualsToken;
                 // "in" keyword in for (var x in []) { }
                 case SyntaxKind.ForInStatement:
@@ -555,7 +559,7 @@ module TypeScript.Services.Formatting {
             switch (node.kind()) {
                 case SyntaxKind.Block:
                 case SyntaxKind.SwitchStatement:
-                case SyntaxKind.ObjectLiteralExpression:
+                case SyntaxKind.ObjectLiteral:
                     return true;
             }
 
@@ -565,15 +569,14 @@ module TypeScript.Services.Formatting {
         static IsFunctionDeclContext(context: FormattingContext): boolean {
             switch (context.contextNode.kind()) {
                 case SyntaxKind.FunctionDeclaration:
-                case SyntaxKind.MemberFunctionDeclaration:
+                case SyntaxKind.Method:
                 case SyntaxKind.GetAccessor:
                 case SyntaxKind.SetAccessor:
-                case SyntaxKind.MethodSignature:
+                //case SyntaxKind.MethodSignature:
                 case SyntaxKind.CallSignature:
                 case SyntaxKind.FunctionExpression:
-                case SyntaxKind.ConstructorDeclaration:
-                case SyntaxKind.SimpleArrowFunctionExpression:
-                case SyntaxKind.ParenthesizedArrowFunctionExpression:
+                case SyntaxKind.Constructor:
+                case SyntaxKind.ArrowFunction:
                 case SyntaxKind.InterfaceDeclaration: // This one is not truly a function, but for formatting purposes, it acts just like one
                     return true;
             }
@@ -589,7 +592,7 @@ module TypeScript.Services.Formatting {
             switch (node.kind()) {
                 case SyntaxKind.ClassDeclaration:
                 case SyntaxKind.EnumDeclaration:
-                case SyntaxKind.ObjectType:
+                case SyntaxKind.ObjectLiteral:
                 case SyntaxKind.ModuleDeclaration:
                     return true;
             }
@@ -619,9 +622,9 @@ module TypeScript.Services.Formatting {
                 case SyntaxKind.TryStatement:
                 case SyntaxKind.DoStatement:
                 case SyntaxKind.WithStatement:
-                case SyntaxKind.ElseClause:
-                case SyntaxKind.CatchClause:
-                case SyntaxKind.FinallyClause:
+                //case SyntaxKind.ElseClause:
+                case SyntaxKind.CatchBlock:
+                case SyntaxKind.FinallyBlock:
                     return true;
 
                 default:
@@ -630,15 +633,15 @@ module TypeScript.Services.Formatting {
         }
 
         static IsObjectContext(context: FormattingContext): boolean {
-            return context.contextNode.kind() === SyntaxKind.ObjectLiteralExpression;
+            return context.contextNode.kind() === SyntaxKind.ObjectLiteral;
         }
 
         static IsFunctionCallContext(context: FormattingContext): boolean {
-            return context.contextNode.kind() === SyntaxKind.InvocationExpression;
+            return context.contextNode.kind() === SyntaxKind.CallExpression;
         }
 
         static IsNewContext(context: FormattingContext): boolean {
-            return context.contextNode.kind() === SyntaxKind.ObjectCreationExpression;
+            return context.contextNode.kind() === SyntaxKind.NewExpression;
         }
 
         static IsFunctionCallOrNewContext(context: FormattingContext): boolean {
@@ -658,12 +661,14 @@ module TypeScript.Services.Formatting {
         }
 
         static IsObjectTypeContext(context: FormattingContext): boolean {
-            return context.contextNode.kind() === SyntaxKind.ObjectType && context.contextNode.parent().kind() !== SyntaxKind.InterfaceDeclaration;
+            return context.contextNode.kind() === SyntaxKind.TypeLiteral && context.contextNode.parent().kind() !== SyntaxKind.InterfaceDeclaration;
         }
 
         static IsTypeArgumentOrParameter(tokenKind: SyntaxKind, parentKind: SyntaxKind): boolean {
-            return ((tokenKind === SyntaxKind.LessThanToken || tokenKind === SyntaxKind.GreaterThanToken) &&
-                (parentKind === SyntaxKind.TypeParameterList || parentKind === SyntaxKind.TypeArgumentList));
+            // TODO: COMMENTED OUT
+            return ((tokenKind === SyntaxKind.LessThanToken || tokenKind === SyntaxKind.GreaterThanToken));
+                //&&
+                //(parentKind === SyntaxKind.TypeParameterList || parentKind === SyntaxKind.TypeArgumentList));
         }
 
         static IsTypeArgumentOrParameterContext(context: FormattingContext): boolean {
@@ -672,7 +677,8 @@ module TypeScript.Services.Formatting {
         }
 
         static IsVoidOpContext(context: FormattingContext): boolean {
-            return context.currentTokenSpan.kind === SyntaxKind.VoidKeyword && context.currentTokenParent.kind() === SyntaxKind.VoidExpression;
+            return context.currentTokenSpan.kind === SyntaxKind.VoidKeyword && context.currentTokenParent.kind() === SyntaxKind.PrefixOperator;
+            //return context.currentTokenSpan.kind === SyntaxKind.VoidKeyword && context.currentTokenParent.kind() === SyntaxKind.VoidExpression;
         }
     }
 }

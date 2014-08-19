@@ -15,11 +15,11 @@
 
 ///<reference path='formatting.ts' />
 
-module TypeScript.Services.Formatting {
+module ts.formatting {
     export class IndentationNodeContextPool {
         private nodes: IndentationNodeContext[] = [];
 
-        public getNode(parent: IndentationNodeContext, node: ISyntaxNode, fullStart: number, indentationLevel: number, childIndentationLevelDelta: number): IndentationNodeContext {
+        public getNode(parent: IndentationNodeContext, node: Node, fullStart: number, indentationLevel: number, childIndentationLevelDelta: number): IndentationNodeContext {
             if (this.nodes.length > 0) {
                 var cachedNode = this.nodes.pop();
                 cachedNode.update(parent, node, fullStart, indentationLevel, childIndentationLevelDelta);

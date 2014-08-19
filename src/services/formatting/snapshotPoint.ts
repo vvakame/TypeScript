@@ -15,7 +15,7 @@
 
 ///<reference path='formatting.ts' />
 
-module TypeScript.Services.Formatting {
+module ts.formatting {
 
     export class SnapshotPoint {
         constructor(public snapshot: ITextSnapshot, public position: number) {

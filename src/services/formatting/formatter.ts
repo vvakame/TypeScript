@@ -15,7 +15,8 @@
 
 ///<reference path='formatting.ts' />
 
-module TypeScript.Services.Formatting {
+module ts.formatting {
+
     export class Formatter extends MultipleTokenIndenter {
         private previousTokenSpan: TokenSpan = null;
         private previousTokenParent: IndentationNodeContext = null;
@@ -27,10 +28,10 @@ module TypeScript.Services.Formatting {
         private formattingRequestKind: FormattingRequestKind;
         private formattingContext: FormattingContext;
 
-        constructor(textSpan: TextSpan,
-            sourceUnit: SourceUnitSyntax,
+        constructor(textSpan: TypeScript.TextSpan,
+            sourceUnit: SourceFile,
             indentFirstToken: boolean,
-            options: FormattingOptions,
+            options: TypeScript.FormattingOptions,
             snapshot: ITextSnapshot,
             rulesProvider: RulesProvider,
             formattingRequestKind: FormattingRequestKind) {
@@ -44,21 +45,21 @@ module TypeScript.Services.Formatting {
             this.formattingContext = new FormattingContext(this.snapshot(), this.formattingRequestKind);
         }
 
-        public static getEdits(textSpan: TextSpan,
-            sourceUnit: SourceUnitSyntax,
-            options: FormattingOptions,
+        public static getEdits(textSpan: TypeScript.TextSpan,
+            sourceUnit: SourceFile,
+            options: TypeScript.FormattingOptions,
             indentFirstToken: boolean,
             snapshot: ITextSnapshot,
             rulesProvider: RulesProvider,
             formattingRequestKind: FormattingRequestKind): TextEditInfo[] {
             var walker = new Formatter(textSpan, sourceUnit, indentFirstToken, options, snapshot, rulesProvider, formattingRequestKind);
-            visitNodeOrToken(walker, sourceUnit);
+            visitNodeOrToken(sourceUnit, walker);
             return walker.edits();
         }
 
-        public visitTokenInSpan(token: ISyntaxToken): void {
-            if (token.fullWidth() !== 0) {
-                var tokenSpan = new TextSpan(this.position() + token.leadingTriviaWidth(), width(token));
+        public visitTokenInSpan(token: Node): void {
+            if (token.getFullWidth() !== 0) {
+                var tokenSpan = new TypeScript.TextSpan(this.position() + getLeadingTriviaWidth(token), token.getWidth());
                 if (this.textSpan().containsTextSpan(tokenSpan)) {
                     this.processToken(token);
                 }
@@ -68,17 +69,18 @@ module TypeScript.Services.Formatting {
             super.visitTokenInSpan(token);
         }
 
-        private processToken(token: ISyntaxToken): void {
+        private processToken(token: Node): void {
             var position = this.position();
 
             // Extract any leading comments
-            if (token.leadingTriviaWidth() !== 0) {
-                this.processTrivia(token.leadingTrivia(), position);
-                position += token.leadingTriviaWidth();
+            var leadingTriviaWidth = getLeadingTriviaWidth(token);
+            if (leadingTriviaWidth !== 0) {
+                this.processTrivia(getLeadingTrivia(token) , position);
+                position += leadingTriviaWidth;
             }
 
             // Push the token
-            var currentTokenSpan = new TokenSpan(token.kind(), position, width(token));
+            var currentTokenSpan = new TokenSpan(token.kind, position, token.getWidth());
             if (!this.parent().hasSkippedOrMissingTokenChild()) {
                 if (this.previousTokenSpan) {
                     // Note that formatPair calls TrimWhitespaceInLineRange in between the 2 tokens
@@ -95,24 +97,24 @@ module TypeScript.Services.Formatting {
                 this.indentationNodeContextPool().releaseNode(this.previousTokenParent, /* recursive */true);
             }
             this.previousTokenParent = this.parent().clone(this.indentationNodeContextPool());
-            position += width(token);
+            position += token.getWidth();
 
             // Extract any trailing comments
-            if (token.trailingTriviaWidth() !== 0) {
-                this.processTrivia(token.trailingTrivia(), position);
+            if (getTrailingTriviaWidth(token) !== 0) {
+                this.processTrivia(getTrailingTrivia(token), position);
             }
         }
 
-        private processTrivia(triviaList: ISyntaxTriviaList, fullStart: number) {
+        private processTrivia(triviaList: Trivia[], fullStart: number) {
             var position = fullStart;
 
-            for (var i = 0, n = triviaList.count(); i < n ; i++) {
-                var trivia = triviaList.syntaxTriviaAt(i);
+            for (var i = 0, n = triviaList.length; i < n ; i++) {
+                var trivia = triviaList[i];
                 // For a comment, format it like it is a token. For skipped text, eat it up as a token, but skip the formatting
-                if (trivia.isComment() || trivia.isSkippedToken()) {
-                    var currentTokenSpan = new TokenSpan(trivia.kind(), position, trivia.fullWidth());
+                if (trivia.isComment || trivia.isSkippedToken) {
+                    var currentTokenSpan = new TokenSpan(trivia.kind, position, trivia.fullWidth);
                     if (this.textSpan().containsTextSpan(currentTokenSpan)) {
-                        if (trivia.isComment() && this.previousTokenSpan) {
+                        if (trivia.isComment && this.previousTokenSpan) {
                             // Note that formatPair calls TrimWhitespaceInLineRange in between the 2 tokens
                             this.formatPair(this.previousTokenSpan, this.previousTokenParent, currentTokenSpan, this.parent());
                         }
@@ -130,7 +132,7 @@ module TypeScript.Services.Formatting {
                     }
                 }
 
-                position += trivia.fullWidth();
+                position += trivia.fullWidth;
             }
         }
 
@@ -176,7 +178,7 @@ module TypeScript.Services.Formatting {
 
             // The root should be the first element in the parent chain, we can not be here unless something wrong 
             // happened along the way
-            throw Errors.invalidOperation();
+            throw TypeScript.Errors.invalidOperation();
         }
 
         private formatPair(t1: TokenSpan, t1Parent: IndentationNodeContext, t2: TokenSpan, t2Parent: IndentationNodeContext): void {
@@ -217,7 +219,7 @@ module TypeScript.Services.Formatting {
             }
         }
 
-        private getLineNumber(span: TextSpan): number {
+        private getLineNumber(span: TypeScript.TextSpan): number {
             return this.snapshot().getLineNumberFromPosition(span.start());
         }
 
@@ -238,7 +240,7 @@ module TypeScript.Services.Formatting {
             var index = 0;
 
             for (index = text.length - 1; index >= 0; --index) {
-                if (!CharacterInfo.isWhitespace(text.charCodeAt(index))) {
+                if (!TypeScript.CharacterInfo.isWhitespace(text.charCodeAt(index))) {
                     break;
                 }
             }
@@ -255,12 +257,12 @@ module TypeScript.Services.Formatting {
                 return;
             }
 
-            var betweenSpan: TextSpan;
+            var betweenSpan: TypeScript.TextSpan;
 
             switch (rule.Operation.Action) {
                 case RuleAction.Delete:
                     {
-                        betweenSpan = new TextSpan(t1.end(), t2.start() - t1.end());
+                        betweenSpan = new TypeScript.TextSpan(t1.end(), t2.start() - t1.end());
 
                         if (betweenSpan.length() > 0) {
                             this.recordEdit(betweenSpan.start(), betweenSpan.length(), "");
@@ -275,7 +277,7 @@ module TypeScript.Services.Formatting {
                             return;
                         }
 
-                        betweenSpan = new TextSpan(t1.end(), t2.start() - t1.end());
+                        betweenSpan = new TypeScript.TextSpan(t1.end(), t2.start() - t1.end());
 
                         var doEdit = false;
                         var betweenText = this.snapshot().getText(betweenSpan);
@@ -306,7 +308,7 @@ module TypeScript.Services.Formatting {
                             return;
                         }
 
-                        betweenSpan = new TextSpan(t1.end(), t2.start() - t1.end());
+                        betweenSpan = new TypeScript.TextSpan(t1.end(), t2.start() - t1.end());
 
                         if (betweenSpan.length() > 1 || this.snapshot().getText(betweenSpan) != " ") {
                             this.recordEdit(betweenSpan.start(), betweenSpan.length(), " ");

@@ -16,8 +16,8 @@
 ///<reference path='formatting.ts' />
 
 
-module TypeScript.Services.Formatting {
-    export class TokenSpan extends TextSpan {
+module ts.formatting {
+    export class TokenSpan extends TypeScript.TextSpan {
         constructor(public kind: SyntaxKind, start: number, length: number) {
             super(start, length);
         }

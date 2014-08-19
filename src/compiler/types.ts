@@ -209,6 +209,11 @@ module ts {
         SyntaxList,
         // Enum value count
         Count,
+        SingleLineCommentTrivia,
+        MultiLineCommentTrivia,
+        NewLineTrivia,
+        WhitespaceTrivia,
+
         // Markers
         FirstAssignment = EqualsToken,
         LastAssignment = CaretEqualsToken,
@@ -217,7 +222,9 @@ module ts {
         FirstKeyword = BreakKeyword,
         LastKeyword = StringKeyword,
         FirstFutureReservedWord = ImplementsKeyword,
-        LastFutureReservedWord = YieldKeyword
+        LastFutureReservedWord = YieldKeyword,
+        FirstToken = NumericLiteral,
+        LastToken = StringKeyword
     }
 
     export enum NodeFlags {

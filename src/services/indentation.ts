@@ -1,13 +1,13 @@
 ///<reference path='references.ts' />
 
-module TypeScript.Indentation {
-    export function columnForEndOfTokenAtPosition(syntaxTree: SyntaxTree, position: number, options: FormattingOptions): number {
-        var token = findToken(syntaxTree.sourceUnit(), position);
-        return columnForStartOfTokenAtPosition(syntaxTree, position, options) + width(token);
+module ts.formatting {
+    export function columnForEndOfTokenAtPosition(sourceFile: SourceFile, position: number, options: TypeScript.FormattingOptions): number {
+        var token = findToken(sourceFile, position);
+        return columnForStartOfTokenAtPosition(sourceFile, position, options) + token.getWidth();
     }
 
-    export function columnForStartOfTokenAtPosition(syntaxTree: SyntaxTree, position: number, options: FormattingOptions): number {
-        var token = findToken(syntaxTree.sourceUnit(), position);
+    export function columnForStartOfTokenAtPosition(sourceFile: SourceFile, position: number, options: TypeScript.FormattingOptions): number {
+        var token = findToken(sourceFile, position);
 
         // Walk backward from this token until we find the first token in the line.  For each token 
         // we see (that is not the first tokem in line), push the entirety of the text into the text 
@@ -25,40 +25,40 @@ module TypeScript.Indentation {
         //              __
         //          ____
         //      ____
-        var firstTokenInLine = Syntax.firstTokenInLineContainingPosition(syntaxTree, token.fullStart());
+        var firstTokenInLine = firstTokenInLineContainingPosition(sourceFile, token.getFullStart());
         var leadingTextInReverse: string[] = [];
 
         var current = token;
         while (current !== firstTokenInLine) {
-            current = previousToken(current);
+            current = getPreviousToken(current);
 
             if (current === firstTokenInLine) {
                 // We're at the first token in teh line.
                 // We don't want the leading trivia for this token.  That will be taken care of in
                 // columnForFirstNonWhitespaceCharacterInLine.  So just push the trailing trivia
                 // and then the token text.
-                leadingTextInReverse.push(current.trailingTrivia().fullText());
-                leadingTextInReverse.push(current.text());
+                leadingTextInReverse.push(getTrailingTriviaFullText(current));
+                leadingTextInReverse.push(current.getText());
             }
             else {
                 // We're at an intermediate token on the line.  Just push all its text into the array.
-                leadingTextInReverse.push(current.fullText());
+                leadingTextInReverse.push(current.getFullText());
             }
         }
 
         // Now, add all trivia to the start of the line on the first token in the list.
-        collectLeadingTriviaTextToStartOfLine(firstTokenInLine, leadingTextInReverse);
+        collectLeadingTriviaTextToStartOfLine(sourceFile, firstTokenInLine, leadingTextInReverse);
 
         return columnForLeadingTextInReverse(leadingTextInReverse, options);
     }
 
-    export function columnForStartOfFirstTokenInLineContainingPosition(syntaxTree: SyntaxTree, position: number, options: FormattingOptions): number {
+    export function columnForStartOfFirstTokenInLineContainingPosition(sourceFile: SourceFile, position: number, options: TypeScript.FormattingOptions): number {
         // Walk backward through the tokens until we find the first one on the line.
-        var firstTokenInLine = Syntax.firstTokenInLineContainingPosition(syntaxTree, position);
+        var firstTokenInLine = firstTokenInLineContainingPosition(sourceFile, position);
         var leadingTextInReverse: string[] = [];
 
         // Now, add all trivia to the start of the line on the first token in the list.
-        collectLeadingTriviaTextToStartOfLine(firstTokenInLine, leadingTextInReverse);
+        collectLeadingTriviaTextToStartOfLine(sourceFile, firstTokenInLine, leadingTextInReverse);
 
         return columnForLeadingTextInReverse(leadingTextInReverse, options);
     }
@@ -66,19 +66,19 @@ module TypeScript.Indentation {
     // Collect all the trivia that precedes this token.  Stopping when we hit a newline trivia
     // or a multiline comment that spans multiple lines.  This is meant to be called on the first
     // token in a line.
-    function collectLeadingTriviaTextToStartOfLine(firstTokenInLine: ISyntaxToken,
+    function collectLeadingTriviaTextToStartOfLine(sourceFile: SourceFile, firstTokenInLine: Node,
                                                    leadingTextInReverse: string[]) {
-        var leadingTrivia = firstTokenInLine.leadingTrivia();
+        var leadingTrivia =  getLeadingTrivia(firstTokenInLine);
 
-        for (var i = leadingTrivia.count() - 1; i >= 0; i--) {
-            var trivia = leadingTrivia.syntaxTriviaAt(i);
-            if (trivia.kind() === SyntaxKind.NewLineTrivia) {
+        for (var i = leadingTrivia.length - 1; i >= 0; i--) {
+            var trivia = leadingTrivia[i];
+            if (trivia.kind === SyntaxKind.NewLineTrivia) {
                 break;
             }
 
-            if (trivia.kind() === SyntaxKind.MultiLineCommentTrivia) {
-                var lineSegments = Syntax.splitMultiLineCommentTriviaIntoMultipleLines(trivia);
-                leadingTextInReverse.push(ArrayUtilities.last(lineSegments));
+            if (trivia.kind === SyntaxKind.MultiLineCommentTrivia) {
+                var lineSegments = splitMultiLineCommentTriviaIntoMultipleLines(trivia);
+                leadingTextInReverse.push(TypeScript.ArrayUtilities.last(lineSegments));
 
                 if (lineSegments.length > 0) {
                     // This multiline comment actually spanned multiple lines.  So we're done.
@@ -88,12 +88,12 @@ module TypeScript.Indentation {
                 // It was only on a single line, so keep on going.
             }
 
-            leadingTextInReverse.push(trivia.fullText());
+            leadingTextInReverse.push(getTriviaText(trivia, sourceFile));
         }
     }
 
     function columnForLeadingTextInReverse(leadingTextInReverse: string[],
-                                           options: FormattingOptions): number {
+                                           options: TypeScript.FormattingOptions): number {
         var column = 0;
 
         // walk backwards.  This means we're actually walking forward from column 0 to the start of
@@ -107,11 +107,11 @@ module TypeScript.Indentation {
     }
 
     // Returns the column that this input string ends at (assuming it starts at column 0).
-    export function columnForPositionInString(input: string, position: number, options: FormattingOptions): number {
+    export function columnForPositionInString(input: string, position: number, options: TypeScript.FormattingOptions): number {
         return columnForPositionInStringWorker(input, position, 0, options);
     }
     
-    function columnForPositionInStringWorker(input: string, position: number, startColumn: number, options: FormattingOptions): number {
+    function columnForPositionInStringWorker(input: string, position: number, startColumn: number, options: TypeScript.FormattingOptions): number {
         var column = startColumn;
         var spacesPerTab = options.spacesPerTab;
 
@@ -129,7 +129,7 @@ module TypeScript.Indentation {
         return column;
     }
 
-    export function indentationString(column: number, options: FormattingOptions): string {
+    export function indentationString(column: number, options: TypeScript.FormattingOptions): string {
         var numberOfTabs = 0;
         var numberOfSpaces = Math.max(0, column);
 
@@ -138,14 +138,14 @@ module TypeScript.Indentation {
             numberOfSpaces -= numberOfTabs * options.spacesPerTab;
         }
 
-        return StringUtilities.repeat('\t', numberOfTabs) +
-               StringUtilities.repeat(' ', numberOfSpaces);
+        return TypeScript.StringUtilities.repeat('\t', numberOfTabs) +
+               TypeScript.StringUtilities.repeat(' ', numberOfSpaces);
     }
 
     export function firstNonWhitespacePosition(value: string): number {
         for (var i = 0; i < value.length; i++) {
             var ch = value.charCodeAt(i);
-            if (!CharacterInfo.isWhitespace(ch)) {
+            if (!TypeScript.CharacterInfo.isWhitespace(ch)) {
                 return i;
             }
         }

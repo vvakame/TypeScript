@@ -15,9 +15,9 @@
 
 ///<reference path='formatting.ts' />
 
-module TypeScript.Services.Formatting {
+module ts.formatting {
     export interface ITextSnapshot {
-        getText(span: TextSpan): string;
+        getText(span: TypeScript.TextSpan): string;
         getLineNumberFromPosition(position: number): number;
         getLineFromPosition(position: number): ITextSnapshotLine;
         getLineFromLineNumber(lineNumber: number): ITextSnapshotLine;
@@ -26,11 +26,11 @@ module TypeScript.Services.Formatting {
     export class TextSnapshot implements ITextSnapshot  {
         private lines: TextSnapshotLine[];
 
-        constructor(private snapshot: ISimpleText) {
+        constructor(private snapshot: TypeScript.ISimpleText) {
             this.lines = [];
         }
 
-        public getText(span: TextSpan): string {
+        public getText(span: TypeScript.TextSpan): string {
             return this.snapshot.substr(span.start(), span.length());
         }
 
