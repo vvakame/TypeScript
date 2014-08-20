@@ -18,7 +18,14 @@
 module ts.formatting {
 
     export function visitNodeOrToken(node: Node, walker: TreeWalker) {
-        forEachChild(node, n => walker.visitNodeOrToken(n));
+        forEach(node.getChildren(), n => {
+            if (n.kind === SyntaxKind.SyntaxList) {
+                visitNodeOrToken(n, walker);
+            }
+            else {
+                walker.visitNodeOrToken(n)
+            }
+        });
     }
 
     export interface TreeWalker {
@@ -110,7 +117,7 @@ module ts.formatting {
 
                 // Only track new lines on tokens within the range. Make sure to check that the last trivia is a newline, and not just one of the trivia
                 var trivia = getTrailingTrivia(token);
-                this._lastTriviaWasNewLine = /*trivia.hasNewLine() && */trivia[trivia.length - 1].kind == SyntaxKind.NewLineTrivia;
+                this._lastTriviaWasNewLine = /*trivia.hasNewLine() && */trivia && trivia[trivia.length - 1].kind == SyntaxKind.NewLineTrivia;
             }
 
             // Update the position
@@ -169,6 +176,18 @@ module ts.formatting {
         }
 
         private getNodeIndentation(node: Node, newLineInsertedByFormatting?: boolean): { indentationAmount: number; indentationAmountDelta: number; } {
+            var snapshot = this._snapshot;
+
+            function isElseTokenLastOnLine(parent: IfStatement) {
+                if (parent.elseStatement) {
+                    var elseToken = findFirst(parent.getChildren(), c => c.kind === SyntaxKind.ElseKeyword);
+                    var line1 = snapshot.getLineNumberFromPosition(elseToken.end);
+                    var line2 = snapshot.getLineNumberFromPosition(node.getStart());
+                    return line1 === line2;
+                }
+                return false;
+            }
+
             var parent = this._parent;
 
             // We need to get the parent's indentation, which could be one of 2 things. If first token of the parent is in the span, use the parent's computed indentation.
@@ -271,8 +290,7 @@ module ts.formatting {
                     break;
 
                 case SyntaxKind.IfStatement:
-                    // TODO: COMMENTED OUT
-                    if (parent.kind() === SyntaxKind.IfStatement && (<IfStatement>parent.node()).elseStatement === node /*&&
+                    if (parent.kind() === SyntaxKind.IfStatement && (<IfStatement>parent.node()).elseStatement === node && isElseTokenLastOnLine(<IfStatement>parent.node()) /*&&
                         !SyntaxUtilities.isLastTokenOnLine((<ElseClauseSyntax>parentNode).elseKeyword, this._text)*/) {
                         // This is an else if statement with the if on the same line as the else, do not indent the if statmement.
                         // Note: Children indentation has already been set by the parent if statement, so no need to increment

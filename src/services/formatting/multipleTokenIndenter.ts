@@ -43,9 +43,9 @@ module ts.formatting {
             }
 
             // Compute an indentation string for this token
-            var indentationString = indentationString(indentationAmount, this.options);
+            var indentationString = formatting.indentationString(indentationAmount, this.options);
 
-            var commentIndentationString = indentationString(commentIndentationAmount, this.options);
+            var commentIndentationString = formatting.indentationString(commentIndentationAmount, this.options);
 
             // Record any needed indentation edits
             this.recordIndentationEditsForToken(token, indentationString, commentIndentationString);
@@ -188,7 +188,7 @@ module ts.formatting {
             if (finalColumns < 0) {
                 finalColumns = 0;
             }
-            var indentationString = indentationString(finalColumns, this.options);
+            var indentationString = formatting.indentationString(finalColumns, this.options);
             
             if (firstNonWhitespacePosition < segment.length &&
                 TypeScript.CharacterInfo.isLineTerminator(segment.charCodeAt(firstNonWhitespacePosition))) {

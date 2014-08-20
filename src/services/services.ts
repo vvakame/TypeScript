@@ -458,7 +458,7 @@ module ts {
         var result: Trivia[];
 
         var pos = start;
-        end = end || text.length;
+        end = end !== undefined ?  end : text.length;
         while (pos < end) {
             var startPos = pos;
             var ch = text.charCodeAt(pos);
@@ -519,7 +519,6 @@ module ts {
                             pos: startPos,
                             end: pos
                         };
-
                     }
                     else {
                         Debug.fail("comment expected")
@@ -549,7 +548,12 @@ module ts {
                     result.push(trivia);
                     break;
                 default:
-                    Debug.fail("trivia should contain only comments\whitespaces\newlines");
+                    if (trailing) {
+                        return undefined;
+                    }
+                    else {
+                        Debug.fail("trivia should contain only comments\\whitespaces\\newlines");
+                    }
                     break;
             }
         }
@@ -567,22 +571,12 @@ module ts {
         }
         function walk(n: Node): Node {
             Debug.assert(n.pos <= pos && pos <= n.end);
-            if (n.flags & NodeFlags.Synthetic) {
-                return n;
-            }
-
-            var children = n.getChildren();
-            if (!children.length) {
+            if (isToken(n)) {
                 return n;
             }
 
             // TODO: consider using binary search
-            return forEach(n.getChildren(), c => {
-                if (pos >= c.pos && pos <= c.end) {
-                    return walk(c);
-                }
-                return undefined;
-            });
+            return forEach(n.getChildren(), c => (pos >= c.pos && pos < c.end) && walk(c));
         }
         return walk(node);
     }
@@ -611,7 +605,7 @@ module ts {
     }
 
     export function isToken(n: Node): boolean {
-        return (n.flags & NodeFlags.Synthetic) !== 0 || n.kind === SyntaxKind.Identifier;
+        return (n.kind >= SyntaxKind.FirstToken && n.kind <= SyntaxKind.LastToken);
     }
 
     export function nodeHasSkippedOrMissingTokens(node: Node): boolean {
