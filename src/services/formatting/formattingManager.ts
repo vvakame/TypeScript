@@ -43,11 +43,12 @@ module ts.formatting {
         public formatOnSemicolon(caretPosition: number): ts.TextEdit[] {
             var semicolonPositionedToken = findToken(this.sourceFile, caretPosition - 1);
 
-            if (semicolonPositionedToken.kind === SyntaxKind.SemicolonToken) {
+            if (semicolonPositionedToken && semicolonPositionedToken.kind === SyntaxKind.SemicolonToken) {
                 // Find the outer most parent that this semicolon terminates
                 var current = semicolonPositionedToken;
-                while (current.parent !== null &&
-                       current.parent.getEnd() === semicolonPositionedToken.getEnd() /*&&                     current.parent.kind !== SyntaxKind.List*/) {
+                // TODO: COMMENTED OUT
+                while (current.parent && current.parent.getEnd() === semicolonPositionedToken.getEnd() && current.parent.kind !== SyntaxKind.SyntaxList
+                     /*&&                     current.parent.kind !== SyntaxKind.List*/) {
                     current = current.parent;
                 }
 
@@ -64,11 +65,11 @@ module ts.formatting {
         public formatOnClosingCurlyBrace(caretPosition: number): ts.TextEdit[] {
             var closeBracePositionedToken = findToken(this.sourceFile, caretPosition - 1);
 
-            if (closeBracePositionedToken.kind === SyntaxKind.CloseBraceToken) {
+            if (closeBracePositionedToken && closeBracePositionedToken.kind === SyntaxKind.CloseBraceToken) {
                 // Find the outer most parent that this closing brace terminates
                 var current = closeBracePositionedToken;
-                while (current.parent !== null &&
-                    current.parent.getEnd() === closeBracePositionedToken.getEnd() /*&&   current.parent.kind !== SyntaxKind.List*/) {
+                while (current.parent &&
+                    current.parent.getEnd() === closeBracePositionedToken.getEnd() && current.parent.kind !== SyntaxKind.SyntaxList /*&&   current.parent.kind !== SyntaxKind.List*/) {
                     current = current.parent;
                 }
 
