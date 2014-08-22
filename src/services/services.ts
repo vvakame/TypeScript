@@ -591,7 +591,14 @@ module ts {
     }
 
     export function getTrailingTriviaFullText(node: Node): string {
-        throw "NYI";
+        var trailingTrivia = node.getTrailingTrivia();
+        if (!trailingTrivia.length) {
+            return "";
+        }
+        else {
+            var sourceFile = node.getSourceFile();
+            return sourceFile.text.substring(trailingTrivia[0].pos, trailingTrivia[trailingTrivia.length - 1].end);
+        }
     }
 
     export function findToken(node: Node, pos: number): Node {

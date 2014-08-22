@@ -244,6 +244,7 @@ module ts.formatting {
                     break;
 
                 // Statements introducing {}
+                case SyntaxKind.InterfaceDeclaration:
                 case SyntaxKind.ClassDeclaration:
                 case SyntaxKind.ModuleDeclaration:
                 case SyntaxKind.TypeLiteral:
@@ -312,7 +313,11 @@ module ts.formatting {
                 //    indentationAmountDelta = this.options.indentSpaces;
                 //    break;
 
-
+                case SyntaxKind.ModuleBlock:
+                case SyntaxKind.FunctionBlock:
+                case SyntaxKind.CatchBlock:
+                case SyntaxKind.FinallyBlock:
+                case SyntaxKind.TryBlock:
                 case SyntaxKind.Block:
                     // Check if the block is a member in a list of statements (if the parent is a source unit, module, or block, or switch clause)
                     if (this.shouldIndentBlockInParent(parent)) {
