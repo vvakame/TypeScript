@@ -42,6 +42,8 @@ module ts {
         getText(): string;
         getFirstToken(): Node;
         getLastToken(): Node;
+        getLeadingTrivia(): Trivia[];
+        getTrailingTrivia(): Trivia[];
     }
 
     export interface Symbol {
@@ -78,8 +80,6 @@ module ts {
 
     var scanner: Scanner = createScanner(ScriptTarget.ES5);
 
-    var emptyArray: any [] = [];
-
     function createNode(kind: SyntaxKind, pos: number, end: number, flags: NodeFlags, parent?: Node): NodeObject {
         var node = <NodeObject> new (getNodeConstructor(kind))();
         node.pos = pos;
@@ -89,6 +89,8 @@ module ts {
         return node;
     }
 
+    var emptyArray: any[] = [];
+
     class NodeObject implements Node {
         public kind: SyntaxKind;
         public pos: number;
@@ -96,6 +98,34 @@ module ts {
         public flags: NodeFlags;
         public parent: Node;
         private _children: Node[];
+        private leadingTrivia: Trivia[];
+        private trailingTrivia: Trivia[];
+        private fullStart: number;
+        private fullEnd: number;
+
+        private initializeLeadingTriviaAndFullStart() {
+            if (!this.leadingTrivia) {
+                this.leadingTrivia = getTrivia(this.getSourceFile(), this, /*trailing*/ false);
+                this.fullStart = this.leadingTrivia.length ? this.leadingTrivia[0].pos : this.getStart();
+            }
+        }
+
+        private initializeTrailingTriviaAndFullEnd() {
+            if (!this.trailingTrivia) {
+                this.trailingTrivia = getTrivia(this.getSourceFile(), this, /*trailing*/ true);
+                this.fullEnd = this.trailingTrivia.length ? this.trailingTrivia[this.trailingTrivia.length - 1].end : this.end;
+            }
+        }
+
+        public getLeadingTrivia(): Trivia[] {
+            this.initializeLeadingTriviaAndFullStart();
+            return this.leadingTrivia;
+        }
+
+        public getTrailingTrivia(): Trivia[] {
+            this.initializeTrailingTriviaAndFullEnd();
+            return this.trailingTrivia;
+        }
 
         public getSourceFile(): SourceFile {
             var node: Node = this;
@@ -108,7 +138,8 @@ module ts {
         }
 
         public getFullStart(): number {
-            return this.pos;
+            this.initializeLeadingTriviaAndFullStart();
+            return this.fullStart;
         }
 
         public getEnd(): number {
@@ -120,11 +151,12 @@ module ts {
         }
 
         public getFullWidth(): number {
-            return this.end - this.getFullStart();
+            this.initializeTrailingTriviaAndFullEnd();
+            return this.fullEnd - this.getFullStart();
         }
 
         public getLeadingTriviaWidth(): number {
-            return this.getStart() - this.pos;
+            return this.getStart() - this.getFullStart();
         }
 
         public getFullText(): string {
@@ -266,7 +298,7 @@ module ts {
         getProperty(propertyName: string): Symbol {
             return this.checker.getPropertyOfType(this, propertyName);
         }
-        getApparentProperties(): Symbol[]{
+        getApparentProperties(): Symbol[] {
             return this.checker.getAugmentedPropertiesOfApparentType(this);
         }
         getCallSignatures(): Signature[] {
@@ -309,7 +341,7 @@ module ts {
         }
     }
 
-     var incrementalParse: IncrementalParse = TypeScript.IncrementalParser.parse;
+    var incrementalParse: IncrementalParse = TypeScript.IncrementalParser.parse;
 
     class SourceFileObject extends NodeObject implements SourceFile {
         public filename: string;
@@ -434,31 +466,53 @@ module ts {
 
     export interface Trivia extends TextRange {
         kind: SyntaxKind;
-        fullWidth: number;
-        isNewLine: boolean;
-        isComment: boolean;
-        isSkippedToken: boolean;
     }
 
-    export function getLeadingTrivia(node: Node): Trivia[] {
-        var text = getSourceFileOfNode(node).text;
-        return getTrivia(text, node.getFullStart(), node.getStart(), /*trailing*/ false);
+    export function isNewLine(trivia: Trivia): boolean {
+        return trivia.kind === SyntaxKind.NewLineTrivia;
     }
 
-    export function getTrailingTrivia(node: Node): Trivia[] {
-        var text = getSourceFileOfNode(node).text;
-        return getTrivia(text, node.getEnd(), /*end*/ undefined, /*trailing*/ true);
+    export function isComment(trivia: Trivia): boolean {
+        return trivia.kind === SyntaxKind.MultiLineCommentTrivia || trivia.kind === SyntaxKind.SingleLineCommentTrivia;
+    }
+
+    export function isSkippedToken(trivia: Trivia): boolean {
+        // TODO: remove
+        return false;
+    }
+
+    export function getTriviaWidth(trivia: Trivia): number {
+        return trivia.end - trivia.pos;
     }
 
     export function getTriviaText(trivia: Trivia, sourceFile: SourceFile): string {
         return sourceFile.text.substring(trivia.pos, trivia.end);
     }
 
-    function getTrivia(text: string, start: number, end: number, trailing: boolean): Trivia[] {
+    var emptyArray: any[] = [];
+
+    function getTrivia(sourceFile: SourceFile, node: Node, trailing: boolean): Trivia[] {
         var result: Trivia[];
+        var text = sourceFile.text;
+
+        var start: number, end: number;
+        if (trailing) {
+            start = node.end;
+            end = text.length;
+        }
+        else {
+            start = node.pos;
+            end = node.getStart();
+        }
+
+        var discardTrivia = !trailing && start !== 0;
+        //if (!trailing && start !== 0) {
+        //    var fullStartLineAndChar = sourceFile.getLineAndCharacterFromPosition(node.pos);
+        //    var startLineAndChar = sourceFile.getLineAndCharacterFromPosition(node.getStart());
+        //    discardTrivia = fullStartLineAndChar.line !== startLineAndChar.line;
+        //}
 
         var pos = start;
-        end = end !== undefined ?  end : text.length;
         while (pos < end) {
             var startPos = pos;
             var ch = text.charCodeAt(pos);
@@ -469,19 +523,14 @@ module ts {
                     }
                 case CharacterCodes.lineFeed:
                     pos++;
-                    var trivia: Trivia = {
-                        kind: SyntaxKind.NewLineTrivia,
-                        isSkippedToken: false,
-                        isComment: false,
-                        isNewLine: true,
-                        fullWidth: pos - startPos,
-                        pos: startPos,
-                        end: pos
+                    if (discardTrivia) {
+                        discardTrivia = false;
                     }
-                    result = result || [];
-                    result.push(trivia);
-                    if (trailing) {
-                        return result;
+                    else {
+                        addTriviaIfNecessary(SyntaxKind.NewLineTrivia, /*pos*/ startPos, /*end*/ pos);
+                        if (trailing) {
+                            return result;
+                        }
                     }
                     break;
                 case CharacterCodes.slash:
@@ -491,15 +540,7 @@ module ts {
                         while (pos < end && !isLineBreak(text.charCodeAt(pos))) {
                             pos++;
                         }
-                        var trivia: Trivia = {
-                            kind: SyntaxKind.SingleLineCommentTrivia,
-                            isSkippedToken: false,
-                            isComment: true,
-                            isNewLine: false,
-                            fullWidth: pos - startPos,
-                            pos: startPos,
-                            end: pos
-                        };
+                        addTriviaIfNecessary(SyntaxKind.SingleLineCommentTrivia, /*pos*/ startPos, /*end*/ pos);
                     }
                     else if (nextChar === CharacterCodes.asterisk) {
                         pos += 2;
@@ -510,23 +551,11 @@ module ts {
                             }
                             pos++;
                         }
-                        var trivia: Trivia = {
-                            kind: SyntaxKind.MultiLineCommentTrivia,
-                            isSkippedToken: false,
-                            isComment: true,
-                            isNewLine: false,
-                            fullWidth: pos - startPos,
-                            pos: startPos,
-                            end: pos
-                        };
+                        addTriviaIfNecessary(SyntaxKind.MultiLineCommentTrivia, /*pos*/ startPos, /*end*/ pos);
                     }
                     else {
                         Debug.fail("comment expected")
                     }
-
-                    result = result || [];
-                    result.push(trivia);
-                    // comment
                     break;
                 case CharacterCodes.tab:
                 case CharacterCodes.verticalTab:
@@ -535,21 +564,11 @@ module ts {
                     while (pos < end && isWhiteSpace(text.charCodeAt(pos))) {
                         pos++;
                     }
-                    var trivia: Trivia = {
-                        kind: SyntaxKind.WhitespaceTrivia,
-                        isSkippedToken: false,
-                        isComment: false,
-                        isNewLine: false,
-                        fullWidth: pos - startPos,
-                        pos: startPos,
-                        end: pos
-                    }
-                    result = result || [];
-                    result.push(trivia);
+                    addTriviaIfNecessary(SyntaxKind.WhitespaceTrivia, /*pos*/ startPos, /*end*/ pos);
                     break;
                 default:
                     if (trailing) {
-                        return undefined;
+                        return result || emptyArray;
                     }
                     else {
                         Debug.fail("trivia should contain only comments\\whitespaces\\newlines");
@@ -557,7 +576,18 @@ module ts {
                     break;
             }
         }
-        return result;
+        return result || emptyArray;
+
+        function addTriviaIfNecessary(kind: SyntaxKind, pos: number, end: number): void {
+            if (!discardTrivia) {
+                var trivia: Trivia = {
+                    kind: kind,
+                    pos: pos,
+                    end: end,
+                };
+                (result || (result = [])).push(trivia);
+            }
+        }
     }
 
     export function getTrailingTriviaFullText(node: Node): string {
@@ -570,13 +600,9 @@ module ts {
             return undefined;
         }
         function walk(n: Node): Node {
-            Debug.assert(n.pos <= pos && pos <= n.end);
-            if (isToken(n)) {
-                return n;
-            }
-
+            Debug.assert(n.pos <= pos && pos < n.end);
             // TODO: consider using binary search
-            return forEach(n.getChildren(), c => (pos >= c.pos && pos < c.end) && walk(c));
+            return isToken(n) ? n : forEach(n.getChildren(), c => (pos >= c.pos && pos < c.end) && walk(c));
         }
         return walk(node);
     }
@@ -598,9 +624,9 @@ module ts {
     }
 
     export function getTrailingTriviaWidth(token: Node): number {
-        var trivia = getTrailingTrivia(token);
+        var trivia = token.getTrailingTrivia();
         var width = 0;
-        forEach(trivia, t => { width += t.fullWidth; });
+        forEach(trivia, t => { width += getTriviaWidth(t); });
         return width;
     }
 

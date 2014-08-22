@@ -116,8 +116,8 @@ module ts.formatting {
                 this.visitTokenInSpan(token);
 
                 // Only track new lines on tokens within the range. Make sure to check that the last trivia is a newline, and not just one of the trivia
-                var trivia = getTrailingTrivia(token);
-                this._lastTriviaWasNewLine = /*trivia.hasNewLine() && */trivia && trivia[trivia.length - 1].kind == SyntaxKind.NewLineTrivia;
+                var trivia = token.getTrailingTrivia();
+                this._lastTriviaWasNewLine = /*trivia.hasNewLine() && */trivia.length && trivia[trivia.length - 1].kind == SyntaxKind.NewLineTrivia;
             }
 
             // Update the position

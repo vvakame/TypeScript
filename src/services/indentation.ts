@@ -68,7 +68,7 @@ module ts.formatting {
     // token in a line.
     function collectLeadingTriviaTextToStartOfLine(sourceFile: SourceFile, firstTokenInLine: Node,
                                                    leadingTextInReverse: string[]) {
-        var leadingTrivia =  getLeadingTrivia(firstTokenInLine);
+        var leadingTrivia =  firstTokenInLine.getLeadingTrivia();
 
         for (var i = leadingTrivia.length - 1; i >= 0; i--) {
             var trivia = leadingTrivia[i];

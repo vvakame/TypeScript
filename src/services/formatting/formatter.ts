@@ -75,7 +75,7 @@ module ts.formatting {
             // Extract any leading comments
             var leadingTriviaWidth = getLeadingTriviaWidth(token);
             if (leadingTriviaWidth !== 0) {
-                this.processTrivia(getLeadingTrivia(token) , position);
+                this.processTrivia(token.getLeadingTrivia() , position);
                 position += leadingTriviaWidth;
             }
 
@@ -101,7 +101,7 @@ module ts.formatting {
 
             // Extract any trailing comments
             if (getTrailingTriviaWidth(token) !== 0) {
-                this.processTrivia(getTrailingTrivia(token), position);
+                this.processTrivia(token.getTrailingTrivia(), position);
             }
         }
 
@@ -110,11 +110,12 @@ module ts.formatting {
 
             for (var i = 0, n = triviaList.length; i < n ; i++) {
                 var trivia = triviaList[i];
+                var triviaWidth = getTriviaWidth(trivia);
                 // For a comment, format it like it is a token. For skipped text, eat it up as a token, but skip the formatting
-                if (trivia.isComment || trivia.isSkippedToken) {
-                    var currentTokenSpan = new TokenSpan(trivia.kind, position, trivia.fullWidth);
+                if (isComment(trivia) || isSkippedToken(trivia)) {
+                    var currentTokenSpan = new TokenSpan(trivia.kind, position, triviaWidth);
                     if (this.textSpan().containsTextSpan(currentTokenSpan)) {
-                        if (trivia.isComment && this.previousTokenSpan) {
+                        if (isComment(trivia) && this.previousTokenSpan) {
                             // Note that formatPair calls TrimWhitespaceInLineRange in between the 2 tokens
                             this.formatPair(this.previousTokenSpan, this.previousTokenParent, currentTokenSpan, this.parent());
                         }
@@ -132,7 +133,7 @@ module ts.formatting {
                     }
                 }
 
-                position += trivia.fullWidth;
+                position += triviaWidth;
             }
         }
 

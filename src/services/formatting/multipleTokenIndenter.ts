@@ -65,12 +65,13 @@ module ts.formatting {
             var leadingWhiteSpace = ""; // We need to track the whitespace before a multiline comment
 
             // Process any leading trivia if any
-            var triviaList = getLeadingTrivia(token);
+            var triviaList = token.getLeadingTrivia();
             if (triviaList) {
-                for (var i = 0, length = triviaList.length; i < length; i++, position += trivia.fullWidth) {
+                for (var i = 0, length = triviaList.length; i < length; i++, position += triviaWidth) {
                     var trivia = triviaList[i];
+                    var triviaWidth = getTriviaWidth(trivia);
                     // Skip this trivia if it is not in the span
-                    if (!this.textSpan().containsTextSpan(new TypeScript.TextSpan(position, trivia.fullWidth))) {
+                    if (!this.textSpan().containsTextSpan(new TypeScript.TextSpan(position, triviaWidth))) {
                         continue;
                     }
 
@@ -96,9 +97,9 @@ module ts.formatting {
                             // If the next trivia is a comment, use the comment indentation level instead of the regular indentation level
                             // If the next trivia is a newline, this whole line is just whitespace, so don't do anything (trimming will take care of it)
                             var nextTrivia = length > i + 1 && triviaList[i + 1];
-                            var whiteSpaceIndentationString = nextTrivia && nextTrivia.isComment ? commentIndentationString : indentationString;
+                            var whiteSpaceIndentationString = nextTrivia && isComment(nextTrivia) ? commentIndentationString : indentationString;
                             if (indentNextTokenOrTrivia) {
-                                if (!(nextTrivia && nextTrivia.isNewLine)) {
+                                if (!(nextTrivia && isNewLine(nextTrivia))) {
                                     this.recordIndentationEditsForWhitespace(trivia, position, whiteSpaceIndentationString);
                                 }
                                 indentNextTokenOrTrivia = false;
