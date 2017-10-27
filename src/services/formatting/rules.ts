@@ -238,6 +238,10 @@ namespace ts.formatting {
         public NoSpaceAfterTypeAssertion: Rule;
         public SpaceAfterTypeAssertion: Rule;
 
+        // No space before type annotations
+        public NoSpaceBeforeTypeAnnotation: Rule;
+        public SpaceBeforeTypeAnnotation: Rule;
+
         // No space before non-null assertion operator
         public NoSpaceBeforeNonNullAssertionOperator: Rule;
 
@@ -478,6 +482,10 @@ namespace ts.formatting {
             this.NoSpaceAfterTypeAssertion = new Rule(RuleDescriptor.create3(SyntaxKind.GreaterThanToken, Shared.TokenRange.Any), RuleOperation.create2(new RuleOperationContext(Rules.IsOptionDisabledOrUndefined("insertSpaceAfterTypeAssertion"), Rules.IsNonJsxSameLineTokenContext, Rules.IsTypeAssertionContext), RuleAction.Delete));
             this.SpaceAfterTypeAssertion = new Rule(RuleDescriptor.create3(SyntaxKind.GreaterThanToken, Shared.TokenRange.Any), RuleOperation.create2(new RuleOperationContext(Rules.IsOptionEnabled("insertSpaceAfterTypeAssertion"), Rules.IsNonJsxSameLineTokenContext, Rules.IsTypeAssertionContext), RuleAction.Space));
 
+            // Insert space after type annotation
+            this.NoSpaceBeforeTypeAnnotation = new Rule(RuleDescriptor.create2(Shared.TokenRange.Any, SyntaxKind.ColonToken), RuleOperation.create2(new RuleOperationContext(Rules.IsOptionDisabledOrUndefined("insertSpaceBeforeTypeAnnotation"), Rules.IsNonJsxSameLineTokenContext, Rules.IsIncludeTypeAnnotation), RuleAction.Delete));
+            this.SpaceBeforeTypeAnnotation = new Rule(RuleDescriptor.create2(Shared.TokenRange.Any, SyntaxKind.ColonToken), RuleOperation.create2(new RuleOperationContext(Rules.IsOptionEnabled("insertSpaceBeforeTypeAnnotation"), Rules.IsNonJsxSameLineTokenContext, Rules.IsIncludeTypeAnnotation), RuleAction.Space));
+
             // These rules are higher in priority than user-configurable rules.
             this.HighPriorityCommonRules = [
                 this.IgnoreBeforeComment, this.IgnoreAfterLineComment,
@@ -544,7 +552,8 @@ namespace ts.formatting {
                 this.SpaceBeforeOpenParenInFuncDecl, this.NoSpaceBeforeOpenParenInFuncDecl,
                 this.NewLineBeforeOpenBraceInControl,
                 this.NewLineBeforeOpenBraceInFunction, this.NewLineBeforeOpenBraceInTypeScriptDeclWithBlock,
-                this.SpaceAfterTypeAssertion, this.NoSpaceAfterTypeAssertion
+                this.SpaceAfterTypeAssertion, this.NoSpaceAfterTypeAssertion,
+                this.SpaceBeforeTypeAnnotation, this.NoSpaceBeforeTypeAnnotation
             ];
 
             // These rules are lower in priority than user-configurable rules.
@@ -911,6 +920,16 @@ namespace ts.formatting {
 
         static IsTypeAssertionContext(context: FormattingContext): boolean {
             return context.contextNode.kind === SyntaxKind.TypeAssertionExpression;
+        }
+
+        static IsIncludeTypeAnnotation(context: FormattingContext): boolean {
+            switch (context.contextNode.kind) {
+                case SyntaxKind.VariableDeclaration:
+                case SyntaxKind.Parameter:
+                return true;
+                default:
+                return false;
+            }
         }
 
         static IsVoidOpContext(context: FormattingContext): boolean {
